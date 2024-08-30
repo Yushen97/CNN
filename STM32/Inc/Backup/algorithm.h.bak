@@ -1,0 +1,20 @@
+#ifndef __ALGORITHM_H
+#define __ALGORITHM_H
+
+#include "stdint.h"
+
+void Conv_result_print(uint16_t image_id, uint8_t kernal_id);
+void single_image_conv(uint8_t Ch, uint16_t image_id, uint8_t kernal_id);
+void full_image_conv(void);
+
+void Running(void);
+
+void full_scan(void);
+void BiDirScan(void);
+void LeakageTest(void);
+void All_Writing_Zero(void);
+void Full_result_print(void);
+void BiDirScan_Single_TenTimes(void);
+
+#endif
+

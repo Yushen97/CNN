@@ -1,0 +1,311 @@
+#include "tim.h"
+#include "data.h"
+#include "main.h"
+#include "math.h"
+#include "stdio.h"
+#include "stdlib.h"
+#include "tftdriver.h"
+#include "algorithm.h"
+
+//*************tftdrive****************//
+extern uint8_t ADC_output_size;
+extern uint16_t ADCP_output[32];
+extern uint16_t ADCN_output[32];
+extern int16_t ADC_output[32];
+
+//*************data****************//
+extern uint8_t SI0;
+extern uint8_t SI1;
+extern uint8_t SI2;
+extern uint8_t SI3;
+extern uint8_t SP0;
+extern uint8_t SN0;
+extern uint8_t SP1;
+extern uint8_t SN1;
+extern uint8_t SP2;
+extern uint8_t SN2;
+extern uint8_t SP3;
+extern uint8_t SN3;
+
+extern uint8_t Row; 									//Row size
+extern uint8_t Col;										//Col size
+extern uint8_t Kernal_Size;						//Kernal size
+extern uint8_t Image_num;							//Image size
+extern uint8_t Kernal_num;						//Kernal size
+extern uint8_t Test_all[][32];				//Test_all
+extern uint8_t Mnist[][28][28];				//Mnist data
+extern uint8_t Mnist_label[];					//Mnist label
+extern int16_t Conv_result[30][30]; 	//Conv_result
+extern uint8_t Kernal_P[][3][3];			//Kernal_P		
+extern uint8_t Kernal_N[][3][3];			//Kernal_N
+
+//Memory charac
+
+
+//***Conv_result_print
+void Conv_result_print(uint16_t image_id, uint8_t kernal_id){
+	printf("\nConv result of image:%d, kernal:%d \n",image_id, kernal_id);
+	for(uint8_t i=0;i<Row-2;i++){
+		for(uint8_t j=0; j<Col-2;j++){
+			if(j<Col-3){printf("%4d,",Conv_result[i][j]);}else{printf("%4d",Conv_result[i][j]);}
+		}printf("\n");
+	}
+}
+
+void Full_result_print(void){
+	printf("**************Full result print**************\n");
+	for(uint8_t row=0;row<32;row++){
+		for(uint8_t col=0; col<32;col++){
+			printf("%4d ",Conv_result[row][col]);
+		}printf("\n");
+	}
+}
+
+//***single_image_conv
+void single_image_conv(uint8_t Ch, uint16_t image_id, uint8_t kernal_id){
+	//Writing single image
+	//Image_input(Ch,image_id);
+	
+	//Sliding the weight from top to bottom and then from left to right.
+	for(uint8_t j=0;j<(Col-Kernal_Size+1);j++){		//Left-->Right size: Col-Kernal_Size+1=26
+		for(uint8_t i=0;i<3;i++){										//Top-->Bottom size: 3
+			//Weight_input_full(Ch,0,j,kernal_id,i);	//Single weight inputing
+		}
+		
+		//Reading result
+			ADC_Read(1);
+			ADC_Read(0);
+		
+		//Transfering the reading result to conv result
+		
+	}
+	//Print final result
+	Conv_result_print(image_id, kernal_id);
+}
+//***full_image_conv
+void full_image_conv(void){
+	for(uint16_t i=0;i<Image_num;i++){
+		for(uint8_t j=0;j<Kernal_num;j++){
+			single_image_conv(1, i, j);
+		}	
+	}
+}
+//Running
+void Running(void){
+
+	//*****Memory Characteristic*****//
+	full_scan();
+	
+	//BiDirScan();
+	
+	//LeakageTest();
+	
+	//BiDirScan_Single_TenTimes();
+	
+	//*****Conv Characteristic*****//
+	//printf("\nConvlution runing...\n");	
+	//Conv_result_print(0,0);
+		
+	//single_image_conv(1,0,0);
+		
+	//full_image_conv();
+	
+	
+	//*****CNN Charac*****//
+	//printf("CNN Running...\n");	
+	
+	//*****Module function testing*****//
+	//**DAC_Write test
+	//DAC_Write(0);
+	//HAL_Delay(10);
+	//DAC_Write(5);
+	//HAL_Delay(10);
+	
+	//**ADC test
+	//ADC_Read(1);
+	//ADC_Read(0);
+	//ADC_Output_print();
+	//HAL_Delay(10);
+	
+	//**CompCh_select
+	//CompCh_select(0);
+	//ADC_Output_print();
+	
+	//**Data_input test
+	//Data_input(Test_all[0]);
+	//HAL_Delay(10);
+	//Data_input(Test_all[1]);
+	//HAL_Delay(10);
+	
+	//**Kernel_input test
+	//Kernel_input(21,3,Kernal_P[0][0]);
+	//HAL_Delay(10);
+	//Kernel_input(21,3,Kernal_P[0][1]);
+	//HAL_Delay(10);
+	
+	//**HV66PG_Write test
+	//uint32_t HV66_data=0xFFFFFFFF;
+	//HV66PG_Write(SP3,HV66_data);
+	//HAL_Delay(10);
+}
+//***full_scan
+void full_scan(void){
+	uint32_t INSC=0xFFFFFFFF;
+	//初始化所有权重
+	Data_input(Test_all[2]);
+	HV66PG_Write(SP0,INSC);
+	HV66PG_Write(SN0,INSC);
+	//数据写入
+	Data_input(Test_all[3]);
+	HV66PG_Write(SI0,INSC);
+	//Scaning and reading data
+	for(uint8_t col=0;col<32;col++){
+		//扫描列准备
+		Test_all[4][col]=255;
+		if(col==0){
+			Test_all[4][31]=0;
+		}else{
+			Test_all[4][col-1]=0;
+		}
+		//开启扫描与计算
+		Data_input(Test_all[4]);
+		HV66PG_Write(SP0,INSC);
+		CompCh_select(0);
+		//数据写入
+		for(uint8_t row=0;row<32;row++){			
+				Conv_result[row][col]=ADC_output[row];
+		}
+	}
+	Full_result_print();
+}
+//*** BiDirScan
+void BiDirScan(void){
+	uint32_t INSC=0xFFFFFFFF;		
+	//Writing weight, fixed at 255	
+
+	for(uint16_t t=0;t<1000;t++){ //Runing times
+		printf("Running times: %d\n", t);
+		Test_all[4][0]=255;
+		Data_input(Test_all[4]);
+		HV66PG_Write(SI0,INSC);	
+		
+		for(uint16_t i=0; i<256; i++){
+			//Writing data, increasing from 0 to 255
+				Test_all[4][0]=i;
+				Data_input(Test_all[4]);
+				HV66PG_Write(SP0,INSC);
+			
+				//Computing
+				CompCh_select(0);
+				printf("Data: %d\n", i);
+				ADC_Output_print();
+			}
+		for(uint16_t i=255; i>0; i--){
+			//Writing data, increasing from 0 to 255
+				Test_all[4][0]=i;
+				Data_input(Test_all[4]);
+				HV66PG_Write(SP0,INSC);
+				
+				//Computing	
+				CompCh_select(0);
+				printf("Data: %d\n", i);
+				ADC_Output_print();
+		}
+	}
+}
+//*** BiDirScan_Single_TenTimes
+void BiDirScan_Single_TenTimes(void){
+	uint32_t INSC=0xFFFFFFFF;		
+	uint16_t ave=0;
+	//Writing weight, fixed at 255	
+
+	for(uint16_t t=0;t<1000;t++){ //Runing times
+		printf("Running times: %d\n", t);
+		Test_all[4][0]=255;
+		Data_input(Test_all[4]);
+		HV66PG_Write(SP0,INSC);	
+		
+		for(uint16_t i=0; i<256; i++){
+			//Writing data, increasing from 0 to 255
+			Test_all[4][0]=i;
+			Data_input(Test_all[4]);
+			HV66PG_Write(SI0,INSC);
+			//Computing
+			ave=0;
+			for(uint8_t average=0;average<10;average++){	
+				CompCh_select(0);
+				ave+=ADCP_output[0];			
+				if(average==9){
+					printf("%3d %4d\n",i, ave/10);
+				}
+			}
+		}
+		for(uint16_t i=255; i>1; i--){
+			//Writing data, increasing from 0 to 255
+			Test_all[4][0]=i;
+			Data_input(Test_all[4]);
+			HV66PG_Write(SI0,INSC);
+			//Computing
+			ave=0;
+			for(uint8_t average=0;average<10;average++){	
+				CompCh_select(0);
+				ave+=ADCP_output[0];			
+				if(average==9){
+					printf("%3d %4d\n",i, ave/10);
+				}
+			}	
+		}
+	}
+}
+//***LeakageTest
+void LeakageTest(void){
+	uint32_t INSC=0xFFFFFFFF;		
+	uint16_t ave=0;
+
+	for(uint8_t i=0;i<11;i++){ //Short term test
+		Data_input(Test_all[2]);
+		HV66PG_Write(SP0,INSC);
+		HV66PG_Write(SI0,INSC);
+		printf("Para=%d\n",i*5+50);
+		for(uint32_t t=0;t<5000;t++){ //Runing times
+			HAL_Delay(1); //Measuring every 10s
+			Test_all[3][0]=i*5+50;
+			Data_input(Test_all[3]);
+			ave=0;
+			for(uint8_t average=0;average<10;average++){	
+				CompCh_select(0);
+				ave+=ADCP_output[0];			
+				if(average==9){
+					printf("%3d %4d\n",t, ave/10);
+				}
+			}
+		}
+	}
+	
+	for(uint8_t i=0;i<5;i++){ //Long term test
+		Data_input(Test_all[2]);
+		HV66PG_Write(SP0,INSC);
+		HV66PG_Write(SI0,INSC);
+		printf("Para=%d\n",80+i*10);
+		for(uint32_t t=0;t<500000;t++){ //Runing times
+			
+			Test_all[3][0]=80+i*10;
+			Data_input(Test_all[3]);
+			HAL_Delay(10); //Measuring every 100ms
+			
+			ave=0;
+			for(uint8_t average=0;average<10;average++){	
+				CompCh_select(0);
+				ave+=ADCP_output[0];			
+				if(average==9){
+					printf("%3d %4d\n",t, ave/10);
+				}
+			}
+		}
+	}
+}
+
+//All_Writing_Zero
+void All_Writing_Zero(void){
+	Data_input(Test_all[2]);
+}

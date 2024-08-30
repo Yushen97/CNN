@@ -1,0 +1,15 @@
+#ifndef __DISPLAY_H
+#define __DISPLAY_H	
+
+#include "stdint.h"
+
+void OLED_Menu(uint8_t state);
+
+
+void OLED_Inference(void);
+
+
+void OLED_Training(void);
+
+#endif
+

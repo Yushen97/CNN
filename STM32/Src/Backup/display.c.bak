@@ -1,0 +1,146 @@
+//OLED显示界面描述
+//20220309,HYS
+//待解决问题：**
+
+#include "display.h"
+#include "main.h"
+#include "oled.h"
+#include "algorithm.h"
+#include "stdio.h"
+#include "string.h"
+#include "tftdriver.h"
+#include "math.h"
+
+int8_t Menu_num=1;
+int8_t Inference_ID_pos=1;
+int8_t Inference_ID_10=0;
+int8_t Inference_ID_1=0;
+int8_t Epoch_num_pos=1;
+int8_t Epoch_num_10=0;
+int8_t Epoch_num_1=0;
+uint8_t Training_flag=0;
+uint8_t Inference_flag=0;
+
+
+//*************algorithm****************//
+extern uint8_t Epoch_Set;
+extern uint8_t Epoch_cur;
+extern uint8_t Infer_ID;
+
+extern float ACTh;
+extern float Cost;
+extern float Pred;
+
+extern float Input_all[][8];
+extern float Output_all[];
+
+
+//****************fsc*******************//
+
+
+//*************tftdrive****************//
+
+
+void OLED_Menu(uint8_t state){
+	switch(state){
+		case 1:
+		{ 
+			OLED_ShowStr(0, 1,  " TFTNN  System ", 2);
+			OLED_ShowStr(0, 3,  "               ", 1);
+			OLED_ShowStr(0, 4,  "-->  ", 2);
+			OLED_ShowStr(0, 6,  "     ", 2);
+			OLED_ShowStr(40, 4, "Inference ", 2);
+			OLED_ShowStr(40, 6, "Training  ", 2);
+
+		}break;
+		case 2:
+		{
+			OLED_ShowStr(0, 1,  " TFTNN  System ", 2);
+		  OLED_ShowStr(0, 3,  "               ", 1);
+			OLED_ShowStr(0, 4,  "     ", 2);
+			OLED_ShowStr(0, 6,  "-->  ", 2);
+			OLED_ShowStr(40, 4, "Inference ", 2);
+			OLED_ShowStr(40, 6, "Training  ", 2);
+		}break;
+	}
+}	
+
+
+void OLED_Inference(void){
+	if(Inference_flag==1){
+		Infer_one();
+		Inference_flag=0;
+		Inference_ID_pos=1;//运行结束后停止,并将Epoch_num_pos归位
+	}
+	
+	char label1[15]="Inf ID: ";
+	char INFID_10[1];
+	sprintf(INFID_10,"%d",Inference_ID_10);
+	char INFID_1[1];
+	sprintf(INFID_1,"%d    ",Inference_ID_1);
+	strcat(label1,INFID_10);
+	strcat(label1,INFID_1);
+	OLED_ShowStr(0, 1, label1, 2);
+	
+	switch(Inference_ID_pos){
+		case 1: OLED_ShowStr(0, 3,  "           -     ", 1);break;
+		case 2: OLED_ShowStr(0, 3,  "            -    ", 1);break;
+		case 3: OLED_ShowStr(0, 3,  "              run", 1);break;
+	}
+	
+	char label2[15]="Predict: ";
+  char PRED[4];
+	sprintf(PRED,"%4.2f ",Pred);
+	strcat(label2,PRED);
+	OLED_ShowStr(0, 4, label2, 2);
+	
+	char label3[15]="Origin: ";
+	char ORIG[4];
+	sprintf(ORIG,"%4.2f ",Output_all[Infer_ID]);
+	strcat(label3,ORIG);
+	OLED_ShowStr(0, 6, label3, 2);
+}
+
+
+void OLED_Training(void){
+	if(Training_flag==1){
+		Training();
+		Epoch_cur++;
+		if(Epoch_cur==Epoch_Set){//运行结束后停止,将Epoch_num_pos归位,并对所有输出做3次Infer
+			Training_flag=0;
+			Epoch_num_pos=1;
+			for(uint8_t i=0;i<5;i++){
+				Infer_all();
+			}
+		}
+	}
+	
+	char label1[15]="Epo set: ";
+	char EPOCHNUM_10[1];
+	sprintf(EPOCHNUM_10,"%d",Epoch_num_10);
+	char EPOCHNUM_1[1];
+	sprintf(EPOCHNUM_1,"%d    ",Epoch_num_1);
+	strcat(label1,EPOCHNUM_10);
+	strcat(label1,EPOCHNUM_1);
+	OLED_ShowStr(0, 1, label1, 2);
+	
+	switch(Epoch_num_pos){
+		case 1: OLED_ShowStr(0, 3,  "            -     ", 1);break;
+		case 2: OLED_ShowStr(0, 3,  "             -    ", 1);break;
+		case 3: OLED_ShowStr(0, 3,  "               run", 1);break;
+	}
+	
+	char label2[15]="Epoch: ";
+	char EPOCHCUR[4];
+	sprintf(EPOCHCUR,"%d       ",Epoch_cur);
+	strcat(label2,EPOCHCUR);
+	OLED_ShowStr(0, 4, label2, 2);
+	
+	char label3[15]="Cost: ";
+	char COSTVALUE[4];
+	sprintf(COSTVALUE,"%5.3f   ",Cost);
+	strcat(label3,COSTVALUE);
+	OLED_ShowStr(0, 6, label3, 2);
+	
+}
+

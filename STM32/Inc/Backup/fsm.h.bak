@@ -1,0 +1,11 @@
+#ifndef __FSM_H
+#define __FSM_H
+
+#include "stdint.h"
+
+void State_show(uint8_t nxt);
+
+void State_flip(uint16_t GPIO_Pin);
+
+
+#endif
